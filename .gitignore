@@ -1,0 +1,8 @@
+/files/
+/output_files/
+/parsedmarc/GeoLite2-Country*
+*.properties
+.idea/
+spamhaus-checker/.idea
+
+*.pdf

@@ -1,0 +1,43 @@
+version: '3.5'
+services:
+  parsedmarc:
+    build: ./parsedmarc/
+    volumes:
+      - ./files:/input:ro
+      - ./output_files:/output
+    command: parsedmarc -c /parsedmarc.ini /input/*
+    depends_on:
+      - elasticsearch
+    restart: on-failure
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.16
+    environment:
+      - discovery.type=single-node
+
+  grafana:
+    build: ./grafana/
+    volumes:
+      - ./grafana/Grafana-DMARC_Reports.json:/var/lib/grafana/dashboards/Grafana-DMARC_Reports.json:rw
+      - ./grafana/Grafana-DMARC_IP_Reputation.json:/var/lib/grafana/dashboards/Grafana-IP_Reputation.json:rw
+    ports:
+      - 3000:3000
+    user: root
+    environment:
+      GF_INSTALL_PLUGINS: grafana-piechart-panel,grafana-worldmap-panel
+      GF_AUTH_ANONYMOUS_ENABLED: 'true'
+
+  api:
+    build: 
+      context: ./
+      dockerfile: api/Dockerfile
+      args:
+        JAR_FILE_API: ../api/target/*.jar
+        JAR_FILE_AbuseChecker: ../ip-abuse-checker/target/*with-dependencies.jar
+    env_file: ./api/ip-abuse-checker.env
+    volumes:
+      - /data/api
+    ports:
+      - 8080:8080
+    depends_on:
+      - elasticsearch
